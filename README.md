@@ -166,15 +166,19 @@ Next, create a function for predictions and assembling of all models. We do thes
 
 
 ```r
+#We use the mode for mayority vote
+Mode <- function(x) {
+   ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+  }
+
+
 MycombRFpredict<- function(modlist, newdata){
-  #With sapply we will make predictions with all models in one line
   newpredictors <- sapply(modlist, function(x) predict(x,newdata))
-  #Create a new dataframe with the classe variable and the 10 predictions from random forests
-  assembledData <- data.frame(newpredictors, classe=newdata$classe)
-  #Create a new prediction using lda for joining the classifiers. lda doesn't need any parameter
-  combModFit <- train(classe ~.,method="lda",data=assembledData)
-  combPred <- predict(combModFit,assembledData)
-  combPred #Return the final prediction
+  assembledData <- data.frame(newpredictors)
+  #Create a new prediction using the Mode as majority vote
+  combPred<- as.factor(apply(newpredictors,1, Mode))
+  combPred
 }
 ```
 
@@ -191,36 +195,36 @@ confusionMatrix(combinePred, subtesting$classe)
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 1116    7    0    0    0
-##          B    0  751    4    0    0
-##          C    0    1  679    6    0
-##          D    0    0    1  635    1
-##          E    0    0    0    2  720
+##          A 1115   12    0    0    0
+##          B    1  746    6    0    0
+##          C    0    1  677   14    1
+##          D    0    0    1  628    1
+##          E    0    0    0    1  719
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.9944          
-##                  95% CI : (0.9915, 0.9965)
+##                Accuracy : 0.9903          
+##                  95% CI : (0.9867, 0.9931)
 ##     No Information Rate : 0.2845          
 ##     P-Value [Acc > NIR] : < 2.2e-16       
 ##                                           
-##                   Kappa : 0.9929          
+##                   Kappa : 0.9877          
 ##  Mcnemar's Test P-Value : NA              
 ## 
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   0.9895   0.9927   0.9876   0.9986
-## Specificity            0.9975   0.9987   0.9978   0.9994   0.9994
-## Pos Pred Value         0.9938   0.9947   0.9898   0.9969   0.9972
-## Neg Pred Value         1.0000   0.9975   0.9985   0.9976   0.9997
+## Sensitivity            0.9991   0.9829   0.9898   0.9767   0.9972
+## Specificity            0.9957   0.9978   0.9951   0.9994   0.9997
+## Pos Pred Value         0.9894   0.9907   0.9769   0.9968   0.9986
+## Neg Pred Value         0.9996   0.9959   0.9978   0.9954   0.9994
 ## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2845   0.1914   0.1731   0.1619   0.1835
-## Detection Prevalence   0.2863   0.1925   0.1749   0.1624   0.1840
-## Balanced Accuracy      0.9988   0.9941   0.9953   0.9935   0.9990
+## Detection Rate         0.2842   0.1902   0.1726   0.1601   0.1833
+## Detection Prevalence   0.2873   0.1919   0.1767   0.1606   0.1835
+## Balanced Accuracy      0.9974   0.9903   0.9924   0.9880   0.9985
 ```
 
-For the testing set, we reached an accuracy of 99.4%
+For the testing set, we reached an accuracy of 99.03%
 
 ##For curiosity...
 
@@ -239,7 +243,7 @@ In Figure 1 we have plotted the first 15 most important variables for the 1st mo
 
 ##Conclusion
 
-For a completely independent test sample, subtesting, our combination of random forests reached an accuracy of 99.4% which is really good. Velloso et al. (2013) reported an accuracy of 99.9% which is awesome and we were not that far with our bagged model.
+For a completely independent test sample, subtesting, our combination of random forests reached an accuracy of 99.03% which is really good. Velloso et al. (2013) reported an accuracy of 99.9% which is awesome and we were not that far with our bagged model.
 
 I hope you enjoyed my solution to this project. 
 
