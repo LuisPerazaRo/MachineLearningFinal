@@ -171,7 +171,7 @@ assembledData <- data.frame(newpredictors, classe=subtraining$classe)
 combModlda<- train(classe~., data = assembledData, method="lda")
 ```
 
-Notice that we have use the original subtraining set without bootstrapping. We can now create a prediction function that wraps all in one for future unknown samples:
+Notice that we have used the original subtraining set without bootstrapping. We can now create a prediction function that wraps all in one for future unknown samples:
 
 
 ```r
