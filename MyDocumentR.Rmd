@@ -104,29 +104,29 @@ We have decided to save the list of models because the estimation takes a lot ti
 load("modALLRF.RData")
 ```
 
-Next, create a function for predictions and assembling of all models. We do these as follows:
+The next step is to wrap the 10 random forest models in one, by training a new model. In this case a linear discriminant:
+
+```{r,,message=FALSE, warning=FALSE}
+newpredictors <- sapply(modlist, function(x) predict(x,subtraining))
+assembledData <- data.frame(newpredictors, classe=subtraining$classe)
+combModlda<- train(classe~., data = assembledData, method="lda")
+```
+
+Notice that we have use the original subtraining set without bootstrapping. We can now create a prediction function that wraps all in one for future unknown samples:
 
 ```{r,message=FALSE, warning=FALSE}
-#We use the mode for mayority vote
-Mode <- function(x) {
-   ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-  }
-
-
-MycombRFpredict<- function(modlist, newdata){
-  newpredictors <- sapply(modlist, function(x) predict(x,newdata))
-  assembledData <- data.frame(newpredictors)
-  #Create a new prediction using the Mode as majority vote
-  combPred<- as.factor(apply(newpredictors,1, Mode))
-  combPred
+MycombRFpredict<- function(modlist,combModlda, newdata){ #10 random forest list and model wrapper
+  newpredictors <- sapply(modlist, function(x) predict(x,newdata)) #Do all predictions per forest
+  assembledData <- data.frame(newpredictors) #Paste random names Xs to the variables
+  combpred <- predict(combModlda, assembledData) #Predict the new variables with an LDA model
+  combpred
 }
 ```
 
 Now we can evaluate the perfomance of the 10 random forests. First, we will call the function designed above and then use the confusionMatrix R function to estimate performance. We use the subtesting sample we create at the very beggining of our analysis and which is independent from the training set.
 
 ```{r,message=FALSE, warning=FALSE}
-combinePred <- MycombRFpredict(modlist,subtesting)
+combinePred <- MycombRFpredict(modlist, combModlda ,subtesting)
 confusionMatrix(combinePred, subtesting$classe)
 ```
 

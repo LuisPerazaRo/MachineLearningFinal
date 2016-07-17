@@ -162,23 +162,24 @@ We have decided to save the list of models because the estimation takes a lot ti
 load("modALLRF.RData")
 ```
 
-Next, create a function for predictions and assembling of all models. We do these as follows:
+The next step is to wrap the 10 random forest models in one, by training a new model. In this case a linear discriminant:
 
 
 ```r
-#We use the mode for mayority vote
-Mode <- function(x) {
-   ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-  }
+newpredictors <- sapply(modlist, function(x) predict(x,subtraining))
+assembledData <- data.frame(newpredictors, classe=subtraining$classe)
+combModlda<- train(classe~., data = assembledData, method="lda")
+```
+
+Notice that we have use the original subtraining set without bootstrapping. We can now create a prediction function that wraps all in one for future unknown samples:
 
 
-MycombRFpredict<- function(modlist, newdata){
-  newpredictors <- sapply(modlist, function(x) predict(x,newdata))
-  assembledData <- data.frame(newpredictors)
-  #Create a new prediction using the Mode as majority vote
-  combPred<- as.factor(apply(newpredictors,1, Mode))
-  combPred
+```r
+MycombRFpredict<- function(modlist,combModlda, newdata){ #10 random forest list and model wrapper
+  newpredictors <- sapply(modlist, function(x) predict(x,newdata)) #Do all predictions per forest
+  assembledData <- data.frame(newpredictors) #Paste random names Xs to the variables
+  combpred <- predict(combModlda, assembledData) #Predict the new variables with an LDA model
+  combpred
 }
 ```
 
@@ -186,7 +187,7 @@ Now we can evaluate the perfomance of the 10 random forests. First, we will call
 
 
 ```r
-combinePred <- MycombRFpredict(modlist,subtesting)
+combinePred <- MycombRFpredict(modlist, combModlda ,subtesting)
 confusionMatrix(combinePred, subtesting$classe)
 ```
 
@@ -195,11 +196,11 @@ confusionMatrix(combinePred, subtesting$classe)
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 1115   12    0    0    0
-##          B    1  746    6    0    0
-##          C    0    1  677   14    1
-##          D    0    0    1  628    1
-##          E    0    0    0    1  719
+##          A 1116   14    0    0    0
+##          B    0  744    8    0    0
+##          C    0    1  675   12    0
+##          D    0    0    1  630    1
+##          E    0    0    0    1  720
 ## 
 ## Overall Statistics
 ##                                           
@@ -214,14 +215,14 @@ confusionMatrix(combinePred, subtesting$classe)
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9991   0.9829   0.9898   0.9767   0.9972
-## Specificity            0.9957   0.9978   0.9951   0.9994   0.9997
-## Pos Pred Value         0.9894   0.9907   0.9769   0.9968   0.9986
-## Neg Pred Value         0.9996   0.9959   0.9978   0.9954   0.9994
+## Sensitivity            1.0000   0.9802   0.9868   0.9798   0.9986
+## Specificity            0.9950   0.9975   0.9960   0.9994   0.9997
+## Pos Pred Value         0.9876   0.9894   0.9811   0.9968   0.9986
+## Neg Pred Value         1.0000   0.9953   0.9972   0.9960   0.9997
 ## Prevalence             0.2845   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2842   0.1902   0.1726   0.1601   0.1833
-## Detection Prevalence   0.2873   0.1919   0.1767   0.1606   0.1835
-## Balanced Accuracy      0.9974   0.9903   0.9924   0.9880   0.9985
+## Detection Rate         0.2845   0.1897   0.1721   0.1606   0.1835
+## Detection Prevalence   0.2880   0.1917   0.1754   0.1611   0.1838
+## Balanced Accuracy      0.9975   0.9889   0.9914   0.9896   0.9992
 ```
 
 For the testing set, we reached an accuracy of 99.03%
@@ -235,7 +236,7 @@ Do you remember that we asked to the train function to estimate variable importa
 plot(varImp(modlist[[1]]),top = 15)
 ```
 
-![](MyDocumentR_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](MyDocumentR_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
     Figure 1. Variable importance
 
